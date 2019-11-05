@@ -2,4 +2,5 @@
 .idea
 dataset/train
 dataset/test
+dataset/*.tar.gz
 .DS_Store
