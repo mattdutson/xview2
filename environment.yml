@@ -1,0 +1,5 @@
+name: xview2
+channels:
+  - defaults
+dependencies:
+  - tensorflow=2.0
