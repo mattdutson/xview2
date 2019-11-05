@@ -1,0 +1,5 @@
+name: xview2-gpu
+channels:
+  - defaults
+dependencies:
+  - tensorflow-gpu=2.0
