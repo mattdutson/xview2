@@ -1,3 +1,5 @@
+.ipynb_checkpoints
 .idea
 dataset/train
 dataset/test
+.DS_Store
