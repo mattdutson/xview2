@@ -1,5 +1,9 @@
 name: xview2-gpu
 channels:
   - defaults
+  - conda-forge
 dependencies:
+  - jupyter
+  - matplotlib
+  - scikit-image=0.16
   - tensorflow-gpu=2.0
