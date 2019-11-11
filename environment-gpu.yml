@@ -6,4 +6,5 @@ dependencies:
   - jupyter
   - matplotlib
   - scikit-image=0.16
+  - scikit-learn
   - tensorflow-gpu=2.0

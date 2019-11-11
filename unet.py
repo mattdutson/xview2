@@ -1,7 +1,18 @@
+from sklearn.metrics import f1_score 
+from statistics import harmonic_mean
 from tensorflow.keras.layers import Concatenate, Conv2D, Conv2DTranspose, Input, MaxPooling2D, Softmax
 from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import SGD
 
-def create_model(shape=(1024, 1024, 3,), n_classes=2):
+
+def xview2_metric(y_true, y_pred):
+    scores = f1_score(y_true, y_pred, average=None)
+    localization = scores[0]
+    damage = harmonic_mean(scores[1:])
+    return 0.3 * localization + 0.7 * damage
+
+
+def create_model(shape=(1024, 1024, 3,), n_classes=5):
     inputs = Input(shape=shape)
 
     # Begin contractive layers
@@ -54,5 +65,11 @@ def create_model(shape=(1024, 1024, 3,), n_classes=2):
     conv_9_3 = Conv2D(n_classes, (1, 1), padding="same")(conv_9_2)
     outputs = Softmax(axis=-1)(conv_9_3)
 
+    # Set up the optimizer and loss
+
+    # TODO: Is categorical cross-entropy the correct loss function given the competition metric?
+    # TODO: Tune the learning rate (value not given in U-Net paper)
     model = Model(inputs=inputs, outputs=outputs)
+    optimizer = SGD(learning_rate=0.01, momentum=0.99)
+    model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=[xview2_metric])
     return model
