@@ -1,6 +1,8 @@
 .ipynb_checkpoints
 .idea
+.vscode
 dataset/train
 dataset/test
 dataset/*.tar.gz
 .DS_Store
+*.pyc
