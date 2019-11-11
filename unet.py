@@ -6,10 +6,12 @@ from tensorflow.keras.optimizers import SGD
 
 
 def xview2_metric(y_true, y_pred):
-    scores = f1_score(y_true, y_pred, average=None)
-    localization = scores[0]
-    damage = harmonic_mean(scores[1:])
-    return 0.3 * localization + 0.7 * damage
+    # with tf.Session().as_default():
+    #     scores = f1_score(y_true, y_pred, average=None)
+    # localization = scores[0]
+    # damage = harmonic_mean(scores[1:])
+    # return 0.3 * localization + 0.7 * damage
+    return 0.0
 
 
 def create_model(shape=(1024, 1024, 3,), n_classes=5):
@@ -71,5 +73,5 @@ def create_model(shape=(1024, 1024, 3,), n_classes=5):
     # TODO: Tune the learning rate (value not given in U-Net paper)
     model = Model(inputs=inputs, outputs=outputs)
     optimizer = SGD(learning_rate=0.01, momentum=0.99)
-    model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=[xview2_metric])
+    model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["acc", xview2_metric])
     return model
