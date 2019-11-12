@@ -1,17 +1,45 @@
-from sklearn.metrics import f1_score 
-from statistics import harmonic_mean
+import tensorflow as tf
+
 from tensorflow.keras.layers import Concatenate, Conv2D, Conv2DTranspose, Input, MaxPooling2D, Softmax
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import SGD
 
+epsilon = 1e-6
+
+
+def harmonic_mean(items):
+    inv_sum = 0.0
+    for i in range(len(items)):
+        inv_sum += (items[i] + epsilon) ** -1
+    return len(items) / inv_sum
+
 
 def xview2_metric(y_true, y_pred):
-    # with tf.Session().as_default():
-    #     scores = f1_score(y_true, y_pred, average=None)
-    # localization = scores[0]
-    # damage = harmonic_mean(scores[1:])
-    # return 0.3 * localization + 0.7 * damage
-    return 0.0
+    true_classes = tf.argmax(y_true, axis=-1)
+    pred_classes = tf.argmax(y_pred, axis=-1)
+    right = (true_classes == pred_classes)
+    wrong = (true_classes != pred_classes)
+
+    # Compute f1 score for each class
+
+    f1_scores = []
+    for i in range(y_pred.shape[-1]):
+        actual_positive = (true_classes == i)
+        actual_negative = (true_classes != i)
+
+        tp = tf.reduce_sum(tf.cast(tf.logical_and(right, actual_positive), tf.int32))
+        fp = tf.reduce_sum(tf.cast(tf.logical_and(wrong, actual_negative), tf.int32))
+        fn = tf.reduce_sum(tf.cast(tf.logical_and(wrong, actual_positive), tf.int32))
+
+        p = tp / (tp + fp)
+        r = tp / (tp + fn)
+        f1_scores.append(harmonic_mean([p, r]))
+    
+    # Combined damage f1 is the harmonic mean of all damage f1 scores
+
+    localization = f1_scores[0]
+    damage = harmonic_mean(f1_scores[1:])
+    return 0.3 * localization + 0.7 * damage
 
 
 def create_model(shape=(1024, 1024, 3,), n_classes=5):
