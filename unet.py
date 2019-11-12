@@ -9,8 +9,8 @@ epsilon = 1e-6
 
 def harmonic_mean(items):
     inv_sum = 0.0
-    for i in range(len(items)):
-        inv_sum += (items[i] + epsilon) ** -1
+    for item in items:
+        inv_sum += (item + epsilon) ** -1
     return len(items) / inv_sum
 
 
