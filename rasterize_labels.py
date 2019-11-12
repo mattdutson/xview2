@@ -28,7 +28,7 @@ def rasterize_labels(args):
     progress = 0.0
     progress_step = 100.0 / len(os.listdir(labels_dir))
     print("Rasterizing polygons...")
-    print("Progress: {:3.1f}\r".format(progress), end="")
+    print("Progress: {:3.1f}%\r".format(progress), end="")
 
     for labels_filename in os.listdir(labels_dir):
         labels_filename = os.path.join(labels_dir, labels_filename)
