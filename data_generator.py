@@ -1,15 +1,16 @@
 import os
-import cv2
+
 import numpy as np
 import tensorflow as tf
 
-def preprocess_dataset(dir):
-    images_dir = os.path.join(dir, "images")
-    raster_dir = os.path.join(dir, "raster_labels")
 
-    pre_images = list()
-    post_images = list()
-    raster_npy = list()
+def preprocess_dataset(directory):
+    images_dir = os.path.join(directory, "images")
+    raster_dir = os.path.join(directory, "raster_labels")
+
+    pre_images = []
+    post_images = []
+    raster_npy = []
 
     for filename in os.listdir(images_dir):
         if "pre" in filename:
@@ -21,29 +22,29 @@ def preprocess_dataset(dir):
         if "post" in filename:
             raster_npy.append(filename)
 
-    pre_images = sorted(pre_images)
-    post_images = sorted(post_images)
-    raster_npy = sorted(raster_npy)
+    dataset = list(zip(sorted(pre_images), sorted(post_images), sorted(raster_npy)))
+    return dataset
 
-    return pre_images, post_images, raster_npy
 
 def load_image(path):
-  # load an image
-  img = cv2.imread(path)
-  img = img[:, :, ::-1]  # BGR -> RGB
-  return img
+    return tf.io.decode_png(tf.io.read_file(path))
 
-def generator(dir):
-    pre, post, npy = preprocess_dataset(dir)
-    dataSetSize = len(pre)
-    for imgInd in range(dataSetSize):
-        pr = pre[imgInd]
-        po = post[imgInd]
-        raster = npy[imgInd]
-        # load the pre and post image
-        pre_tensor = load_image(os.path.join(dir, "images", pr))
-        post_tensor = load_image(os.path.join(dir, "images/", po))
-        pre_post = np.concatenate((pre_tensor, post_tensor), axis=2)
-        # load the rasterized npy file
-        raster_labels = np.load(os.path.join(dir, "raster_labels", raster))
-        yield (tf.convert_to_tensor(pre_post), tf.convert_to_tensor(raster_labels))
+
+def generator(dataset, directory):
+    for item in dataset:
+        pre_image = item[0]
+        post_image = item[1]
+        raster_npy = item[2]
+
+        pre_tensor = load_image(os.path.join(directory, "images", pre_image))
+        post_tensor = load_image(os.path.join(directory, "images", post_image))
+        pre_post = tf.reshape(
+            tf.concat([pre_tensor, post_tensor], axis=-1),
+            [1, pre_tensor.shape[0], pre_tensor.shape[1], 6])
+
+        raster_npy = np.reshape(
+            np.load(os.path.join(directory, "raster_labels", raster_npy)),
+            [1, pre_tensor.shape[0], pre_tensor.shape[1], 1])
+        raster_tensor = tf.keras.utils.to_categorical(raster_npy, num_classes=5)
+
+        yield pre_post, raster_tensor

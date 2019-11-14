@@ -24,10 +24,9 @@ def validation_split(args):
     ensure_exists(val_labels_dir)
     ensure_exists(val_raster_dir)
 
-    images = os.listdir(train_images_dir)
     pre_images = []
-    for filename in images:
-        if "_pre_" in filename:
+    for filename in os.listdir(train_images_dir):
+        if "pre" in filename:
             pre_images.append(filename)
     random.seed(args.seed)
     random.shuffle(pre_images)
@@ -40,7 +39,7 @@ def validation_split(args):
 
     for filename in pre_images[0: n_val]:
         base_pre = os.path.basename(filename).split(".")[0]
-        base_post = base_pre.replace("_pre_", "_post_")
+        base_post = base_pre.replace("pre", "post")
         
         # Move pairs of images
         os.rename(

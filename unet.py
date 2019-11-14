@@ -30,17 +30,18 @@ def xview2_metric(y_true, y_pred):
         fp = tf.reduce_sum(tf.cast(tf.logical_and(wrong, actual_negative), tf.int32))
         fn = tf.reduce_sum(tf.cast(tf.logical_and(wrong, actual_positive), tf.int32))
 
-        p = tp / (tp + fp)
-        r = tp / (tp + fn)
+        p = tf.cast(tp, tf.float32) / (tf.cast(tp + fp, tf.float32) + epsilon)
+        r = tf.cast(tp, tf.float32) / (tf.cast(tp + fn, tf.float32) + epsilon)
+
         f1_scores.append(harmonic_mean([p, r]))
-    
+
     # Combined damage f1 is the harmonic mean of all damage f1 scores
     localization = f1_scores[0]
     damage = harmonic_mean(f1_scores[1:])
     return 0.3 * localization + 0.7 * damage
 
 
-def create_model(shape=(1024, 1024, 3,), n_classes=5):
+def create_model(shape=(1024, 1024, 6,), n_classes=5):
     inputs = Input(shape=shape)
 
     # Begin contractive layers
