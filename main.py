@@ -3,7 +3,7 @@
 import os
 
 import unet
-from data_generator import generator, preprocess_dataset
+from data_generator import preprocess_dataset, generator, compute_class_weights
 
 if __name__ == "__main__":
     # Create data generators
@@ -19,4 +19,8 @@ if __name__ == "__main__":
 
     # Train the model
     model.fit_generator(
-        generator=train_gen, validation_data=val_gen, steps_per_epoch=len(train), validation_steps=len(val))
+        generator=train_gen,
+        validation_data=val_gen,
+        steps_per_epoch=len(train),
+        validation_steps=len(val),
+        class_weight=compute_class_weights(train, train_dir))

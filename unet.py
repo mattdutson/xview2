@@ -93,8 +93,6 @@ def create_model(shape=(1024, 1024, 6,), n_classes=5):
     outputs = Softmax(axis=-1)(conv_9_3)
 
     # Set up the optimizer and loss
-    # TODO: Is categorical cross-entropy the correct loss function given the competition metric?
-    # TODO: Tune the learning rate (value not given in U-Net paper)
     model = Model(inputs=inputs, outputs=outputs)
     optimizer = SGD(learning_rate=0.01, momentum=0.99)
     model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["acc", xview2_metric])

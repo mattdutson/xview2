@@ -48,3 +48,17 @@ def generator(dataset, directory):
         raster_tensor = tf.keras.utils.to_categorical(raster_npy, num_classes=5)
 
         yield pre_post, raster_tensor
+
+
+def compute_class_weights(train, directory, n_classes=5):
+    n_items = len(train)
+    frequencies = np.zeros(n_classes)
+
+    for item in train:
+        raster_npy = item[2]
+        raster_np = np.load(os.path.join(directory, "raster_labels", raster_npy))
+        n_pixels = len(raster_np)
+        for i in range(n_classes):
+            frequencies[i] += np.count_nonzero(raster_np == i) / (n_pixels * n_items)
+
+    return dict(enumerate(frequencies ** -1))
