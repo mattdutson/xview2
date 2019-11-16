@@ -2,7 +2,6 @@ import tensorflow as tf
 
 from tensorflow.keras.layers import Concatenate, Conv2D, Conv2DTranspose, Input, MaxPooling2D, Softmax
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import SGD
 
 epsilon = 1e-6
 
