@@ -53,7 +53,7 @@ class WeightedCrossEntropy:
         return weights * losses
 
 
-optimizer = SGD(learning_rate=0.01, momentum=0.99)
+optimizer = "rmsprop"
 metrics = ["acc", xview2_metric]
 
 
