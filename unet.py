@@ -41,12 +41,23 @@ def xview2_metric(y_true, y_pred):
     return 0.3 * localization + 0.7 * damage
 
 
+class WeightedCrossEntropy:
+    # class_weights is expected to be a Numpy array
+    def __init__(self, class_weights):
+        self.class_weights = tf.convert_to_tensor(class_weights, dtype=tf.float32)
+
+    def __call__(self, y_true, y_pred, sample_weight=None):
+        y_true = tf.stop_gradient(y_true)
+        losses = tf.nn.softmax_cross_entropy_with_logits(y_true, y_pred)
+        weights = tf.reduce_sum(self.class_weights * y_true, axis=-1)
+        return weights * losses
+
+
 optimizer = SGD(learning_rate=0.01, momentum=0.99)
-loss = "categorical_crossentropy"
 metrics = ["acc", xview2_metric]
 
 
-def create_model(shape=(1024, 1024, 6,), n_classes=5):
+def create_model(class_weights, shape=(1024, 1024, 6,), n_classes=5):
     inputs = Input(shape=shape)
 
     # Begin contractive layers
@@ -94,10 +105,9 @@ def create_model(shape=(1024, 1024, 6,), n_classes=5):
     conv_9_1 = Conv2D(64, (3, 3), padding="same", activation="relu")(concat_9)
     conv_9_2 = Conv2D(64, (3, 3), padding="same", activation="relu")(conv_9_1)
 
-    conv_9_3 = Conv2D(n_classes, (1, 1), padding="same", activation="relu")(conv_9_2)
-    outputs = Softmax(axis=-1)(conv_9_3)
+    outputs = Conv2D(n_classes, (1, 1), padding="same", activation="relu")(conv_9_2)
 
     # Set up the optimizer and loss
     model = Model(inputs=inputs, outputs=outputs)
-    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+    model.compile(optimizer=optimizer, loss=WeightedCrossEntropy(class_weights), metrics=metrics)
     return model

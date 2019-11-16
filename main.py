@@ -4,8 +4,8 @@ import os
 
 from tensorflow.keras.models import model_from_json
 
-from data_generator import preprocess_dataset, generator
-from unet import create_model, optimizer, loss, metrics
+from data_generator import preprocess_dataset, generator, compute_class_weights
+from unet import WeightedCrossEntropy, create_model, optimizer, metrics
 
 
 def save_model_arch(model):
@@ -40,13 +40,14 @@ if __name__ == "__main__":
     val_gen = generator(val, val_dir)
 
     # Initialize the model
+    class_weights = compute_class_weights(train, train_dir)
     load_model = False
     if load_model:
         model = load_model_arch()
         model = load_model_weights("weights.h5", model)
-        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        model.compile(optimizer=optimizer, loss=WeightedCrossEntropy(class_weights), metrics=metrics)
     else:
-        model = create_model()
+        model = create_model(class_weights)
 
     # Train the model
     model.fit_generator(

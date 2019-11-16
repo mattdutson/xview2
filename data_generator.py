@@ -61,4 +61,4 @@ def compute_class_weights(train, directory, n_classes=5):
         for i in range(n_classes):
             frequencies[i] += np.count_nonzero(raster_np == i) / (n_pixels * n_items)
 
-    return dict(enumerate(frequencies ** -1))
+    return frequencies ** -1
