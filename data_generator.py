@@ -51,14 +51,12 @@ def generator(dataset, directory):
 
 
 def compute_class_weights(train, directory, n_classes=5):
-    n_items = len(train)
-    frequencies = np.zeros(n_classes)
+    frequencies = np.zeros(n_classes, dtype=np.float32)
 
     for item in train:
-        raster_npy = item[2]
-        raster_np = np.load(os.path.join(directory, "raster_labels", raster_npy))
-        n_pixels = len(raster_np)
+        raster_np = np.load(os.path.join(directory, "raster_labels", item[2]))
         for i in range(n_classes):
-            frequencies[i] += np.count_nonzero(raster_np == i) / (n_pixels * n_items)
+            frequencies[i] += np.count_nonzero(raster_np == i)
 
-    return frequencies ** -1
+    weights = frequencies ** -1
+    return weights / np.sum(weights)
