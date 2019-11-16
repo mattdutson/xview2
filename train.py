@@ -55,8 +55,7 @@ if __name__ == "__main__":
         validation_data=val_gen,
         steps_per_epoch=len(train),
         validation_steps=len(val),
-        epochs=1,
-        verbose=2)
+        epochs=1)
 
     # Save the model
     save_model_arch(model)
