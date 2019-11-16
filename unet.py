@@ -41,6 +41,11 @@ def xview2_metric(y_true, y_pred):
     return 0.3 * localization + 0.7 * damage
 
 
+optimizer = SGD(learning_rate=0.01, momentum=0.99)
+loss = "categorical_crossentropy"
+metrics = ["acc", xview2_metric]
+
+
 def create_model(shape=(1024, 1024, 6,), n_classes=5):
     inputs = Input(shape=shape)
 
@@ -94,6 +99,5 @@ def create_model(shape=(1024, 1024, 6,), n_classes=5):
 
     # Set up the optimizer and loss
     model = Model(inputs=inputs, outputs=outputs)
-    optimizer = SGD(learning_rate=0.01, momentum=0.99)
-    model.compile(optimizer=optimizer, loss="categorical_crossentropy", metrics=["acc", xview2_metric])
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
     return model
