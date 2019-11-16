@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 
 from tensorflow.keras.models import model_from_json
@@ -30,19 +31,18 @@ def load_model_weights(weight_file, model):
     return model
 
 
-if __name__ == "__main__":
+def train(args):
     # Create data generators
     train_dir = os.path.join("dataset", "train")
     val_dir = os.path.join("dataset", "val")
-    train = preprocess_dataset(train_dir)
-    val = preprocess_dataset(val_dir)
-    train_gen = generator(train, train_dir)
-    val_gen = generator(val, val_dir)
+    train_data = preprocess_dataset(train_dir)
+    val_data = preprocess_dataset(val_dir)
+    train_gen = generator(train_data, train_dir)
+    val_gen = generator(val_data, val_dir)
 
     # Initialize the model
-    class_weights = compute_class_weights(train, train_dir)
-    load_model = False
-    if load_model:
+    class_weights = compute_class_weights(train_data, train_dir)
+    if args.load:
         model = load_model_arch()
         model = load_model_weights("weights.h5", model)
         model.compile(optimizer=optimizer, loss=WeightedCrossEntropy(class_weights), metrics=metrics)
@@ -53,10 +53,17 @@ if __name__ == "__main__":
     model.fit_generator(
         generator=train_gen,
         validation_data=val_gen,
-        steps_per_epoch=len(train),
-        validation_steps=len(val),
-        epochs=1)
+        steps_per_epoch=len(train_data),
+        validation_steps=len(val_data),
+        epochs=args.epochs)
 
     # Save the model
     save_model_arch(model)
     save_model_weights(model)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--load", action="store_true")
+    parser.add_argument("-e", "--epochs", default=50, type=int)
+    train(parser.parse_args())
