@@ -31,23 +31,24 @@ def load_image(path):
 
 
 def generator(dataset, directory):
-    for item in dataset:
-        pre_image = item[0]
-        post_image = item[1]
-        raster_npy = item[2]
+    while True:
+        for item in dataset:
+            pre_image = item[0]
+            post_image = item[1]
+            raster_npy = item[2]
 
-        pre_tensor = load_image(os.path.join(directory, "images", pre_image))
-        post_tensor = load_image(os.path.join(directory, "images", post_image))
-        pre_post = tf.reshape(
-            tf.concat([pre_tensor, post_tensor], axis=-1),
-            [1, pre_tensor.shape[0], pre_tensor.shape[1], 6])
+            pre_tensor = load_image(os.path.join(directory, "images", pre_image))
+            post_tensor = load_image(os.path.join(directory, "images", post_image))
+            pre_post = tf.reshape(
+                tf.concat([pre_tensor, post_tensor], axis=-1),
+                [1, pre_tensor.shape[0], pre_tensor.shape[1], 6])
 
-        raster_npy = np.reshape(
-            np.load(os.path.join(directory, "raster_labels", raster_npy)),
-            [1, pre_tensor.shape[0], pre_tensor.shape[1], 1])
-        raster_tensor = tf.keras.utils.to_categorical(raster_npy, num_classes=5)
+            raster_npy = np.reshape(
+                np.load(os.path.join(directory, "raster_labels", raster_npy)),
+                [1, pre_tensor.shape[0], pre_tensor.shape[1], 1])
+            raster_tensor = tf.keras.utils.to_categorical(raster_npy, num_classes=5)
 
-        yield pre_post, raster_tensor
+            yield pre_post, raster_tensor
 
 
 def compute_class_weights(train, directory, n_classes=5):
