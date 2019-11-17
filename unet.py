@@ -13,31 +13,39 @@ def harmonic_mean(items):
     return len(items) / inv_sum
 
 
-def xview2_metric(y_true, y_pred):
+def f1_score(true_positive, pred_positive):
+    tp = tf.reduce_sum(tf.cast(tf.logical_and(true_positive, pred_positive), tf.float32))
+    fp = tf.reduce_sum(tf.cast(tf.logical_and(tf.logical_not(true_positive), pred_positive), tf.float32))
+    fn = tf.reduce_sum(tf.cast(tf.logical_and(true_positive, tf.logical_not(pred_positive)), tf.float32))
+
+    p = tp / (tp + fp + epsilon)
+    r = tp / (tp + fn + epsilon)
+    return harmonic_mean([p, r])
+
+
+def localization_score(y_true, y_pred):
     true_classes = tf.argmax(y_true, axis=-1)
     pred_classes = tf.argmax(y_pred, axis=-1)
-    right = (true_classes == pred_classes)
-    wrong = (true_classes != pred_classes)
 
-    # Compute f1 score for each class
+    true_building = true_classes > 0
+    pred_building = pred_classes > 0
+    return f1_score(true_building, pred_building)
+
+
+def damage_score(y_true, y_pred):
+    true_classes = tf.argmax(y_true, axis=-1)
+    pred_classes = tf.argmax(y_pred, axis=-1)
+
     f1_scores = []
-    for i in range(y_pred.shape[-1]):
-        actual_positive = (true_classes == i)
-        actual_negative = (true_classes != i)
+    for i in range(1, y_pred.shape[-1]):
+        true_positive = true_classes == i
+        pred_positive = pred_classes == i
+        f1_scores.append(f1_score(true_positive, pred_positive))
+    return harmonic_mean(f1_scores)
 
-        tp = tf.reduce_sum(tf.cast(tf.logical_and(right, actual_positive), tf.int32))
-        fp = tf.reduce_sum(tf.cast(tf.logical_and(wrong, actual_negative), tf.int32))
-        fn = tf.reduce_sum(tf.cast(tf.logical_and(wrong, actual_positive), tf.int32))
 
-        p = tf.cast(tp, tf.float32) / (tf.cast(tp + fp, tf.float32) + epsilon)
-        r = tf.cast(tp, tf.float32) / (tf.cast(tp + fn, tf.float32) + epsilon)
-
-        f1_scores.append(harmonic_mean([p, r]))
-
-    # Combined damage f1 is the harmonic mean of all damage f1 scores
-    localization = f1_scores[0]
-    damage = harmonic_mean(f1_scores[1:])
-    return 0.3 * localization + 0.7 * damage
+def xview2_score(y_true, y_pred):
+    return 0.3 * localization_score(y_true, y_pred) + 0.7 * damage_score(y_true, y_pred)
 
 
 class WeightedCrossEntropy:
@@ -53,7 +61,7 @@ class WeightedCrossEntropy:
 
 
 optimizer = "rmsprop"
-metrics = ["acc", xview2_metric]
+metrics = ["acc", localization_score, damage_score, xview2_score]
 
 
 def create_model(class_weights, shape=(1024, 1024, 6,), n_classes=5):
