@@ -23,7 +23,7 @@ def f1_score(true_positive, pred_positive):
     return harmonic_mean([p, r])
 
 
-def localization_score(y_true, y_pred):
+def loc(y_true, y_pred):
     true_classes = tf.argmax(y_true, axis=-1)
     pred_classes = tf.argmax(y_pred, axis=-1)
 
@@ -32,7 +32,7 @@ def localization_score(y_true, y_pred):
     return f1_score(true_building, pred_building)
 
 
-def damage_score(y_true, y_pred):
+def damage(y_true, y_pred):
     true_classes = tf.argmax(y_true, axis=-1)
     pred_classes = tf.argmax(y_pred, axis=-1)
 
@@ -44,8 +44,8 @@ def damage_score(y_true, y_pred):
     return harmonic_mean(f1_scores)
 
 
-def xview2_score(y_true, y_pred):
-    return 0.3 * localization_score(y_true, y_pred) + 0.7 * damage_score(y_true, y_pred)
+def xview2(y_true, y_pred):
+    return 0.3 * loc(y_true, y_pred) + 0.7 * damage(y_true, y_pred)
 
 
 class WeightedCrossEntropy:
@@ -61,7 +61,7 @@ class WeightedCrossEntropy:
 
 
 optimizer = "rmsprop"
-metrics = ["acc", localization_score, damage_score, xview2_score]
+metrics = ["acc", loc, damage, xview2]
 
 
 def create_model(class_weights, shape=(1024, 1024, 6,), n_classes=5):
