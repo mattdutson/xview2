@@ -2,24 +2,31 @@ import tensorflow as tf
 
 from tensorflow.keras.layers import Concatenate, Conv2D, Conv2DTranspose, Input, MaxPooling2D, Softmax
 from tensorflow.keras.models import Model
-
-epsilon = 1e-6
+from tensorflow.keras.optimizers import SGD
 
 
 def harmonic_mean(items):
     inv_sum = 0.0
     for item in items:
-        inv_sum += (item + epsilon) ** -1
+        inv_sum += (item + 1e-6) ** -1
     return len(items) / inv_sum
 
 
-def f1_score(true_positive, pred_positive):
-    tp = tf.reduce_sum(tf.cast(tf.logical_and(true_positive, pred_positive), tf.float32))
-    fp = tf.reduce_sum(tf.cast(tf.logical_and(tf.logical_not(true_positive), pred_positive), tf.float32))
-    fn = tf.reduce_sum(tf.cast(tf.logical_and(true_positive, tf.logical_not(pred_positive)), tf.float32))
+# Determines the fraction a / (a + b), returns 1.0 if a + b == 0
+# a and b are assume to take values 0.0, 1.0, 2.0, ...
+def safe_frac(a, b):
+    den = tf.maximum(a + b, tf.constant(1.0))
+    num = tf.maximum(a, den - (a + b))
+    return num / den
 
-    p = tp / (tp + fp + epsilon)
-    r = tp / (tp + fn + epsilon)
+
+def f1_score(actual_positive, pred_positive):
+    tp = tf.reduce_sum(tf.cast(tf.logical_and(actual_positive, pred_positive), tf.float32))
+    fp = tf.reduce_sum(tf.cast(tf.logical_and(tf.logical_not(actual_positive), pred_positive), tf.float32))
+    fn = tf.reduce_sum(tf.cast(tf.logical_and(actual_positive, tf.logical_not(pred_positive)), tf.float32))
+
+    p = safe_frac(tp, fp)
+    r = safe_frac(tp, fn)
     return harmonic_mean([p, r])
 
 
@@ -27,9 +34,9 @@ def loc(y_true, y_pred):
     true_classes = tf.argmax(y_true, axis=-1)
     pred_classes = tf.argmax(y_pred, axis=-1)
 
-    true_building = true_classes > 0
+    actual_building = true_classes > 0
     pred_building = pred_classes > 0
-    return f1_score(true_building, pred_building)
+    return f1_score(actual_building, pred_building)
 
 
 def damage(y_true, y_pred):
@@ -38,9 +45,9 @@ def damage(y_true, y_pred):
 
     f1_scores = []
     for i in range(1, y_pred.shape[-1]):
-        true_positive = true_classes == i
+        actual_positive = true_classes == i
         pred_positive = pred_classes == i
-        f1_scores.append(f1_score(true_positive, pred_positive))
+        f1_scores.append(f1_score(actual_positive, pred_positive))
     return harmonic_mean(f1_scores)
 
 
@@ -49,7 +56,7 @@ def xview2(y_true, y_pred):
 
 
 class WeightedCrossEntropy:
-    # class_weights is expected to be a Numpy array
+    # class_weights should be a Numpy array
     def __init__(self, class_weights):
         self.class_weights = tf.convert_to_tensor(class_weights, dtype=tf.float32)
 
@@ -60,7 +67,7 @@ class WeightedCrossEntropy:
         return weights * losses
 
 
-optimizer = "rmsprop"
+optimizer = SGD(lr=0.0001, momentum=0.99)
 metrics = ["acc", loc, damage, xview2]
 
 

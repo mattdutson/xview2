@@ -1,10 +1,11 @@
 import os
+import random
 
 import numpy as np
 import tensorflow as tf
 
 
-def preprocess_dataset(directory):
+def preprocess_dataset(directory, shuffle=True):
     images_dir = os.path.join(directory, "images")
     raster_dir = os.path.join(directory, "raster_labels")
 
@@ -23,32 +24,32 @@ def preprocess_dataset(directory):
             raster_npy.append(filename)
 
     dataset = list(zip(sorted(pre_images), sorted(post_images), sorted(raster_npy)))
+    if shuffle:
+        random.shuffle(dataset)
     return dataset
 
 
 def load_image(path):
-    return tf.io.decode_png(tf.io.read_file(path))
+    return tf.cast(tf.io.decode_png(tf.io.read_file(path)), tf.float32) / 255.0
 
 
-def generator(dataset, directory):
+def generator(dataset, directory, reshuffle=True):
     while True:
+        if reshuffle:
+            random.shuffle(dataset)
+
         for item in dataset:
-            pre_image = item[0]
-            post_image = item[1]
-            raster_npy = item[2]
+            pre = load_image(os.path.join(directory, "images", item[0]))
+            post = load_image(os.path.join(directory, "images", item[1]))
 
-            pre_tensor = load_image(os.path.join(directory, "images", pre_image))
-            post_tensor = load_image(os.path.join(directory, "images", post_image))
-            pre_post = tf.reshape(
-                tf.concat([pre_tensor, post_tensor], axis=-1),
-                [1, pre_tensor.shape[0], pre_tensor.shape[1], 6])
+            pre_post = tf.concat([pre, post], axis=-1)
+            pre_post = tf.reshape(pre_post, [1, pre_post.shape[0], pre_post.shape[1], pre_post.shape[2]])
 
-            raster_npy = np.reshape(
-                np.load(os.path.join(directory, "raster_labels", raster_npy)),
-                [1, pre_tensor.shape[0], pre_tensor.shape[1], 1])
-            raster_tensor = tf.keras.utils.to_categorical(raster_npy, num_classes=5)
+            mask = np.load(os.path.join(directory, "raster_labels", item[2]))
+            mask = np.reshape(mask, [1, mask.shape[0], mask.shape[1], 1])
+            mask = tf.keras.utils.to_categorical(mask, num_classes=5)
 
-            yield pre_post, raster_tensor
+            yield pre_post, mask
 
 
 def compute_class_weights(train, directory, n_classes=5):
