@@ -3,62 +3,63 @@ import random
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.utils import Sequence
+
+from util import read_png
 
 
-def preprocess_dataset(directory, shuffle=True):
-    images_dir = os.path.join(directory, "images")
-    raster_dir = os.path.join(directory, "raster_labels")
+class DataGenerator(Sequence):
+    def __init__(self, directory, size=(1024, 1024), n_classes=5, shuffle=True, seed=0):
+        self.size = size
+        self.n_classes = n_classes
 
-    pre_images = []
-    post_images = []
-    raster_npy = []
+        pre_images = []
+        post_images = []
+        self.image_dir = os.path.join(directory, "images")
+        for filename in os.listdir(self.image_dir):
+            if "pre" in filename:
+                pre_images.append(filename)
+            else:
+                post_images.append(filename)
 
-    for filename in os.listdir(images_dir):
-        if "pre" in filename:
-            pre_images.append(filename)
-        else:
-            post_images.append(filename)
+        masks = []
+        self.mask_dir = os.path.join(directory, "masks")
+        for filename in os.listdir(self.mask_dir):
+            if "post" in filename:
+                masks.append(filename)
 
-    for filename in os.listdir(raster_dir):
-        if "post" in filename:
-            raster_npy.append(filename)
+        self.dataset = list(zip(sorted(pre_images), sorted(post_images), sorted(masks)))
+        if shuffle:
+            random.seed(seed)
+            random.shuffle(self.dataset)
 
-    dataset = list(zip(sorted(pre_images), sorted(post_images), sorted(raster_npy)))
-    if shuffle:
-        random.shuffle(dataset)
-    return dataset
+    def __len__(self):
+        return len(self.dataset)
 
+    def __getitem__(self, index):
+        item = self.dataset[index % len(self.dataset)]
 
-def load_image(path):
-    return tf.cast(tf.io.decode_png(tf.io.read_file(path)), tf.float32) / 255.0
+        pre = read_png(os.path.join(self.image_dir, item[0]))
+        post = read_png(os.path.join(self.image_dir, item[1]))
+        pre_post = tf.concat([pre, post], axis=-1)
+        pre_post = tf.cast(pre_post, tf.float32) / 255.0
+        pre_post = tf.image.resize(pre_post, self.size)
+        pre_post = tf.expand_dims(pre_post, axis=0)
 
+        mask = read_png(os.path.join(self.mask_dir, item[2]))
+        mask = tf.image.resize(mask, self.size, method="nearest")
+        mask = tf.expand_dims(mask, axis=0)
+        mask = tf.keras.utils.to_categorical(mask, num_classes=self.n_classes)
 
-def generator(dataset, directory, reshuffle=True):
-    while True:
-        if reshuffle:
-            random.shuffle(dataset)
+        return pre_post, mask
 
-        for item in dataset:
-            pre = load_image(os.path.join(directory, "images", item[0]))
-            post = load_image(os.path.join(directory, "images", item[1]))
+    def class_weights(self):
+        frequencies = np.zeros(self.n_classes, dtype=np.float32)
+        for item in self.dataset:
+            mask = read_png(os.path.join(self.mask_dir, item[2]))
+            for i in range(self.n_classes):
+                frequencies[i] += np.count_nonzero(mask == i)
 
-            pre_post = tf.concat([pre, post], axis=-1)
-            pre_post = tf.reshape(pre_post, [1, pre_post.shape[0], pre_post.shape[1], pre_post.shape[2]])
-
-            mask = np.load(os.path.join(directory, "raster_labels", item[2]))
-            mask = np.reshape(mask, [1, mask.shape[0], mask.shape[1], 1])
-            mask = tf.keras.utils.to_categorical(mask, num_classes=5)
-
-            yield pre_post, mask
-
-
-def compute_class_weights(train, directory, n_classes=5):
-    frequencies = np.zeros(n_classes, dtype=np.float32)
-
-    for item in train:
-        raster_np = np.load(os.path.join(directory, "raster_labels", item[2]))
-        for i in range(n_classes):
-            frequencies[i] += np.count_nonzero(raster_np == i)
-
-    weights = frequencies ** -1
-    return weights / np.sum(weights)
+        weights = frequencies ** -1
+        weights = weights / np.sum(weights)
+        return weights

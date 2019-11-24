@@ -1,69 +1,83 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
 
-from tensorflow.keras.models import model_from_json
+from tensorflow.keras.callbacks import ModelCheckpoint
 
-from data_generator import preprocess_dataset, generator, compute_class_weights
-from unet import WeightedCrossEntropy, create_model, optimizer, metrics
-
-
-def save_model_arch(model):
-    model_json = model.to_json()
-    with open("model.json", "w") as json_file:
-        json_file.write(model_json)
-
-
-def save_model_weights(model):
-    model.save_weights('weights.h5')
-
-
-def load_model_arch():
-    with open('model.json', 'r') as json_file:
-        loaded_model_json = json_file.read()
-        json_file.close()
-        return model_from_json(loaded_model_json)
-
-
-def load_model_weights(weight_file, model):
-    model.load_weights(weight_file)
-    return model
+from data_generator import DataGenerator
+from unet import create_model
+from util import *
 
 
 def train(args):
-    # Create data generators
-    train_dir = os.path.join("dataset", "train")
-    val_dir = os.path.join("dataset", "val")
-    train_data = preprocess_dataset(train_dir)
-    val_data = preprocess_dataset(val_dir)
-    train_gen = generator(train_data, train_dir)
-    val_gen = generator(val_data, val_dir)
+    size = (args.x_size, args.y_size)
+    train_gen = DataGenerator(args.train_dir, size=size, shuffle=True, seed=1)
+    val_gen = DataGenerator(args.val_dir, size=size, shuffle=False)
 
-    # Initialize the model
-    class_weights = compute_class_weights(train_data, train_dir)
-    if args.load:
-        model = load_model_arch()
-        model = load_model_weights("weights.h5", model)
-        model.compile(optimizer=optimizer, loss=WeightedCrossEntropy(class_weights), metrics=metrics)
-    else:
-        model = create_model(class_weights)
+    model = create_model(size=size)
+    if args.load is not None:
+        model.load_weights(model)
 
-    # Train the model
+    optimizer = "rmsprop"
+    loss = WeightedCrossEntropy(train_gen.class_weights())
+    metrics = ["acc", loc, damage, xview2]
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+    callbacks = []
+    if args.checkpoint_dir is not None:
+        path = os.path.join(args.checkpoint_dir, "checkpoint_{epoch}.h5")
+        callbacks.append(ModelCheckpoint(path, save_weights_only=True))
+    if args.best is not None:
+        callbacks.append(ModelCheckpoint(args.best, save_best_only=True, save_weights_only=True))
+
     model.fit_generator(
         generator=train_gen,
         validation_data=val_gen,
-        steps_per_epoch=len(train_data),
-        validation_steps=len(val_data),
-        epochs=args.epochs)
+        steps_per_epoch=500,
+        validation_steps=len(val_gen),
+        epochs=args.epochs,
+        callbacks=callbacks)
 
-    # Save the model
-    save_model_arch(model)
-    save_model_weights(model)
+    if args.output_dir:
+        for i in range(10):
+            item = train_gen[i]
+            save_output(model, i, item, args.output_dir)
+
+    model.save_weights(args.save)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--load", action="store_true")
-    parser.add_argument("-e", "--epochs", default=50, type=int)
+
+    parser.add_argument(
+        "-b", "--best", default=None, type=str,
+        help="path for storing the model with the lowest validation loss")
+    parser.add_argument(
+        "-c", "--checkpoint_dir", default=None, type=str,
+        help="folder for saving model checkpoints after each epoch")
+    parser.add_argument(
+        "-e", "--epochs", default=50, type=int,
+        help="number of training epochs")
+    parser.add_argument(
+        "-l", "--load", default=None, type=str,
+        help="path for loading an existing model")
+    parser.add_argument(
+        "-o", "--output_dir", default=None, type=str,
+        help="path for saving sample outputs")
+    parser.add_argument(
+        "-s", "--save", default="model.h5", type=str,
+        help="path for saving the final model")
+    parser.add_argument(
+        "-t", "--train_dir", default=os.path.join("dataset", "train"), type=str,
+        help="folder containing training data")
+    parser.add_argument(
+        "-v", "--val_dir", default=os.path.join("dataset", "val"), type=str,
+        help="folder containing validation data")
+    parser.add_argument(
+        "-x", "--x_size", default=1024, type=int,
+        help="width of the model input")
+    parser.add_argument(
+        "-y", "--y_size", default=1024, type=int,
+        help="height of the model input")
+
     train(parser.parse_args())
