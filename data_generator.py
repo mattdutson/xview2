@@ -9,8 +9,9 @@ from util import read_png
 
 
 class DataGenerator(Sequence):
-    def __init__(self, directory, size=(1024, 1024), n_classes=5, shuffle=True, seed=0):
+    def __init__(self, directory, size=(1024, 1024), crop_size=None, n_classes=5, shuffle=True, seed=0):
         self.size = size
+        self.crop_size = crop_size
         self.n_classes = n_classes
 
         pre_images = []
@@ -51,7 +52,14 @@ class DataGenerator(Sequence):
         mask = tf.expand_dims(mask, axis=0)
         mask = tf.keras.utils.to_categorical(mask, num_classes=self.n_classes)
 
-        return pre_post, mask
+        if self.crop_size is not None:
+            w = self.crop_size[0]
+            h = self.crop_size[1]
+            x = np.random.randint(0, pre_post.shape[1] - w)
+            y = np.random.randint(0, pre_post.shape[2] - h)
+            return pre_post[:, x:x + w, y:y + h, :], mask[:, x:x + w, y:y + h, :]
+        else:
+            return pre_post, mask
 
     def class_weights(self):
         frequencies = np.zeros(self.n_classes, dtype=np.float32)

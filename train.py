@@ -11,10 +11,14 @@ from util import *
 
 def train(args):
     size = (args.x_size, args.y_size)
-    train_gen = DataGenerator(args.train_dir, size=size, shuffle=True, seed=1)
-    val_gen = DataGenerator(args.val_dir, size=size, shuffle=False)
+    if args.crop_x_size is not None and args.crop_y_size is not None:
+        crop_size = (args.crop_x_size, args.crop_y_size)
+    else:
+        crop_size = None
+    train_gen = DataGenerator(args.train_dir, size=size, crop_size=crop_size, shuffle=True, seed=1)
+    val_gen = DataGenerator(args.val_dir, size=size, crop_size=crop_size, shuffle=False)
 
-    model = create_model(size=size)
+    model = create_model(size=crop_size)
     if args.load is not None:
         model.load_weights(model)
 
@@ -28,7 +32,7 @@ def train(args):
         path = os.path.join(args.checkpoint_dir, "checkpoint_{epoch}.h5")
         callbacks.append(ModelCheckpoint(path, save_weights_only=True))
     if args.best is not None:
-        callbacks.append(ModelCheckpoint(args.best, save_best_only=True, save_weights_only=True))
+        callbacks.append(ModelCheckpoint(args.best, monitor="val_loss", save_best_only=True, save_weights_only=True))
 
     model.fit_generator(
         generator=train_gen,
@@ -50,34 +54,40 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "-b", "--best", default=None, type=str,
+        "--best", default=None, type=str,
         help="path for storing the model with the lowest validation loss")
     parser.add_argument(
-        "-c", "--checkpoint_dir", default=None, type=str,
+        "--checkpoint_dir", default=None, type=str,
         help="folder for saving model checkpoints after each epoch")
     parser.add_argument(
-        "-e", "--epochs", default=50, type=int,
+        "--crop_x_size", default=None, type=int,
+        help="width of random crops")
+    parser.add_argument(
+        "--crop_y_size", default=None, type=int,
+        help="height of random crops")
+    parser.add_argument(
+        "--epochs", default=50, type=int,
         help="number of training epochs")
     parser.add_argument(
-        "-l", "--load", default=None, type=str,
+        "--load", default=None, type=str,
         help="path for loading an existing model")
     parser.add_argument(
-        "-o", "--output_dir", default=None, type=str,
+        "--output_dir", default=None, type=str,
         help="path for saving sample outputs")
     parser.add_argument(
-        "-s", "--save", default="model.h5", type=str,
+        "--save", default="model.h5", type=str,
         help="path for saving the final model")
     parser.add_argument(
-        "-t", "--train_dir", default=os.path.join("dataset", "train"), type=str,
+        "--train_dir", default=os.path.join("dataset", "train"), type=str,
         help="folder containing training data")
     parser.add_argument(
-        "-v", "--val_dir", default=os.path.join("dataset", "val"), type=str,
+        "--val_dir", default=os.path.join("dataset", "val"), type=str,
         help="folder containing validation data")
     parser.add_argument(
-        "-x", "--x_size", default=1024, type=int,
+        "--x_size", default=1024, type=int,
         help="width of the model input")
     parser.add_argument(
-        "-y", "--y_size", default=1024, type=int,
+        "--y_size", default=1024, type=int,
         help="height of the model input")
 
     train(parser.parse_args())
