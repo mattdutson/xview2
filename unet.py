@@ -1,11 +1,13 @@
+import tensorflow as tf
 from tensorflow.keras.layers import *
 from tensorflow.keras.models import Model
 
 
 def conv_block(x, n_filters):
-    x = Conv2D(n_filters, (3, 3), padding="same")(x)
+    x = tf.pad(x, [[0, 0], [1, 1], [1, 1], [0, 0]], mode="SYMMETRIC")
+    x = Conv2D(n_filters, (3, 3))(x)
     x = BatchNormalization()(x)
-    x = ReLU()(x)
+    x = LeakyReLU()(x)
     return x
 
 
@@ -62,6 +64,6 @@ def create_model(n_classes=5, size=(1024, 1024)):
     x = conv_block(x, 64)
     x = conv_block(x, 64)
 
-    x = Conv2D(n_classes, (1, 1), padding="same")(x)
+    x = Conv2D(n_classes, (1, 1))(x)
 
     return Model(inputs=inputs, outputs=x)
