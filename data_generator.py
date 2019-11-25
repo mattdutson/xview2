@@ -13,23 +13,21 @@ class DataGenerator(Sequence):
         self.size = size
         self.crop_size = crop_size
         self.n_classes = n_classes
-
-        pre_images = []
-        post_images = []
         self.image_dir = os.path.join(directory, "images")
-        for filename in os.listdir(self.image_dir):
-            if "pre" in filename:
-                pre_images.append(filename)
-            else:
-                post_images.append(filename)
-
-        masks = []
         self.mask_dir = os.path.join(directory, "masks")
-        for filename in os.listdir(self.mask_dir):
-            if "post" in filename:
-                masks.append(filename)
 
-        self.dataset = list(zip(sorted(pre_images), sorted(post_images), sorted(masks)))
+        self.dataset = []
+        image_list = os.listdir(self.image_dir)
+        mask_list = os.listdir(self.mask_dir)
+        for filename in image_list:
+            if "pre" in filename:
+                post_filename = filename.replace("pre", "post")
+                self.dataset.append((filename, post_filename, post_filename))
+                if post_filename not in image_list:
+                    raise AssertionError(post_filename + " not found in " + self.image_dir)
+                if post_filename not in mask_list:
+                    raise AssertionError(post_filename + " not found in " + self.mask_dir)
+
         if shuffle:
             random.seed(seed)
             random.shuffle(self.dataset)
