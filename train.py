@@ -33,7 +33,7 @@ def train(args):
     model.fit_generator(
         generator=train_gen,
         validation_data=val_gen,
-        steps_per_epoch=500,
+        steps_per_epoch=len(train_gen),
         validation_steps=len(val_gen),
         epochs=args.epochs,
         callbacks=callbacks)
