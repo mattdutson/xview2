@@ -1,5 +1,3 @@
-import tensorflow as tf
-
 from tensorflow.keras.layers import *
 from tensorflow.keras.models import Model
 
@@ -42,7 +40,7 @@ def create_model(n_classes=5, size=(1024, 1024)):
     x = conv_block(x, 1024)
     x = conv_block(x, 1024)
 
-    # Begin expansive layers TODO: Switch from UpSampling to ConvTranspose
+    # Begin expansive layers
 
     x = UpSampling2D((2, 2))(x)
     x = Concatenate(axis=-1)([skip_4, x])
