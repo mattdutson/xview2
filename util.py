@@ -2,6 +2,7 @@ import os
 
 import tensorflow as tf
 
+from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.layers import *
 
 
@@ -11,30 +12,6 @@ def read_png(filename):
 
 def write_png(array, filename):
     tf.io.write_file(filename, tf.image.encode_png(array))
-
-
-def save_output(model, i, item, output_dir):
-    pre_post = item[0]
-
-    pre = pre_post[0, :, :, :3]
-    pre = tf.cast(pre * 255.0, tf.uint8)
-    write_png(pre, os.path.join(output_dir, "{}_pre.png".format(i)))
-
-    post = pre_post[0, :, :, 3:]
-    post = tf.cast(post * 255.0, tf.uint8)
-    write_png(post, os.path.join(output_dir, "{}_post.png".format(i)))
-
-    true = item[1][0]
-    true = tf.argmax(true, axis=-1)
-    true = 50 * tf.cast(true, tf.uint8)
-    true = tf.expand_dims(true, axis=-1)
-    write_png(true, os.path.join(output_dir, "{}_true.png".format(i)))
-
-    pred = model.predict(pre_post)[0, :, :, :]
-    pred = tf.argmax(pred, axis=-1)
-    pred = 50 * tf.cast(pred, tf.uint8)
-    pred = tf.expand_dims(pred, axis=-1)
-    write_png(pred, os.path.join(output_dir, "{}_pred.png".format(i)))
 
 
 def harmonic_mean(items):
@@ -97,3 +74,38 @@ class WeightedCrossEntropy:
         losses = tf.nn.softmax_cross_entropy_with_logits(y_true, y_pred)
         weights = tf.reduce_mean(self.class_weights * y_true, axis=-1)
         return weights * losses
+
+
+class SaveOutput(Callback):
+    def __init__(self, gen, output_dir, n_items=50):
+        self.gen = gen
+        self.output_dir = output_dir
+        self.n_items = n_items
+
+    def set_model(self, model):
+        self.model = model
+
+    def on_epoch_end(self, epoch, logs):
+        for i in range(self.n_items):
+            item = self.gen[i]
+            pre_post = item[0]
+
+            pre = pre_post[0, :, :, :3]
+            pre = tf.cast(pre * 255.0, tf.uint8)
+            write_png(pre, os.path.join(self.output_dir, "{}_{}_pre.png".format(epoch, i)))
+
+            post = pre_post[0, :, :, 3:]
+            post = tf.cast(post * 255.0, tf.uint8)
+            write_png(post, os.path.join(self.output_dir, "{}_{}_post.png".format(epoch, i)))
+
+            true = item[1][0]
+            true = tf.argmax(true, axis=-1)
+            true = 50 * tf.cast(true, tf.uint8)
+            true = tf.expand_dims(true, axis=-1)
+            write_png(true, os.path.join(self.output_dir, "{}_{}_true.png".format(epoch, i)))
+
+            pred = self.model.predict(pre_post)[0, :, :, :]
+            pred = tf.argmax(pred, axis=-1)
+            pred = 50 * tf.cast(pred, tf.uint8)
+            pred = tf.expand_dims(pred, axis=-1)
+            write_png(pred, os.path.join(self.output_dir, "{}_{}_pred.png".format(epoch, i)))

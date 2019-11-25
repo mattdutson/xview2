@@ -33,6 +33,8 @@ def train(args):
         callbacks.append(ModelCheckpoint(path, save_weights_only=True))
     if args.best is not None:
         callbacks.append(ModelCheckpoint(args.best, monitor="val_loss", save_best_only=True, save_weights_only=True))
+    if args.output_dir is not None:
+        callbacks.append(SaveOutput(train_gen, args.output_dir, n_items=50))
 
     model.fit_generator(
         generator=train_gen,
@@ -41,11 +43,6 @@ def train(args):
         validation_steps=len(val_gen),
         epochs=args.epochs,
         callbacks=callbacks)
-
-    if args.output_dir:
-        for i in range(10):
-            item = train_gen[i]
-            save_output(model, i, item, args.output_dir)
 
     model.save_weights(args.save)
 
