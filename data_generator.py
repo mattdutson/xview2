@@ -59,13 +59,17 @@ class DataGenerator(Sequence):
         else:
             return pre_post, mask
 
-    def class_weights(self):
+    def class_weights(self, beta=None):
         frequencies = np.zeros(self.n_classes, dtype=np.float32)
         for item in self.dataset:
             mask = read_png(os.path.join(self.mask_dir, item[2]))
             for i in range(self.n_classes):
                 frequencies[i] += np.count_nonzero(mask == i)
 
-        weights = frequencies ** -1
-        weights = weights / np.sum(weights)
+        if beta is None:
+            weights = frequencies ** -1
+        else:
+            frequencies /= len(self)
+            weights = (1.0 - beta) / (1.0 - beta ** frequencies)
+        weights /= np.mean(weights)
         return weights
