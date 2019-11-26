@@ -18,7 +18,10 @@ def train(args):
     train_gen = DataGenerator(args.train_dir, size=size, crop_size=crop_size, shuffle=True, seed=1)
     val_gen = DataGenerator(args.val_dir, size=size, crop_size=crop_size, shuffle=False)
 
-    model = create_model(size=crop_size)
+    if crop_size is not None:
+        model = create_model(size=crop_size)
+    else:
+        model = create_model(size=size)
     if args.load is not None:
         model.load_weights(model)
 
