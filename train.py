@@ -23,7 +23,7 @@ def train(args):
     else:
         model = create_model(size=size)
     if args.load is not None:
-        model.load_weights(model)
+        model.load_weights(args.load)
 
     optimizer = "rmsprop"
     loss = WeightedCrossEntropy(train_gen.class_weights())
@@ -47,7 +47,8 @@ def train(args):
         epochs=args.epochs,
         callbacks=callbacks)
 
-    model.save_weights(args.save)
+    if args.save is not None:
+        model.save_weights(args.save)
 
 
 if __name__ == "__main__":
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         "--output_dir", default=None, type=str,
         help="path for saving sample outputs")
     parser.add_argument(
-        "--save", default="model.h5", type=str,
+        "--save", default=None, type=str,
         help="path for saving the final model")
     parser.add_argument(
         "--train_dir", default=os.path.join("dataset", "train"), type=str,
