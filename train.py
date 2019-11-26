@@ -3,6 +3,8 @@
 import argparse
 
 from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.optimizers import *
+from tensorflow.keras.optimizers.schedules import PiecewiseConstantDecay
 
 from data_generator import DataGenerator
 from unet import create_model
@@ -25,7 +27,8 @@ def train(args):
     if args.load is not None:
         model.load_weights(args.load)
 
-    optimizer = "rmsprop"
+    schedule = PiecewiseConstantDecay([2 * len(train_gen)], [0.00001, 0.000001])
+    optimizer = RMSprop(learning_rate=schedule)
     loss = WeightedCrossEntropy(train_gen.class_weights())
     metrics = ["acc", loc, damage, xview2]
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)

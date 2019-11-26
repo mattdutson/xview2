@@ -6,7 +6,6 @@ from tensorflow.keras.models import Model
 def conv_block(x, n_filters):
     x = tf.pad(x, [[0, 0], [1, 1], [1, 1], [0, 0]], mode="SYMMETRIC")
     x = Conv2D(n_filters, (3, 3))(x)
-    x = BatchNormalization(epsilon=0.01)(x)
     x = LeakyReLU()(x)
     return x
 
