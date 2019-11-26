@@ -71,9 +71,10 @@ class WeightedCrossEntropy:
 
     def __call__(self, y_true, y_pred, sample_weight=None):
         y_true = tf.stop_gradient(y_true)
-        losses = tf.nn.softmax_cross_entropy_with_logits(y_true, y_pred)
-        weights = tf.reduce_mean(self.class_weights * y_true, axis=-1)
-        return weights * losses
+        pixel_losses = tf.nn.softmax_cross_entropy_with_logits(y_true, y_pred)
+        pixel_weights = tf.reduce_mean(self.class_weights * y_true, axis=-1)
+        mean_loss = tf.reduce_mean(pixel_weights * pixel_losses)
+        return mean_loss
 
 
 class SaveOutput(Callback):
