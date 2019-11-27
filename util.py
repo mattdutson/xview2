@@ -1,7 +1,6 @@
 import os
 
 import tensorflow as tf
-
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.layers import *
 
@@ -21,49 +20,6 @@ def harmonic_mean(items):
     return len(items) / inv_sum
 
 
-# Determines the fraction a / (a + b), returns 1.0 if a + b == 0
-# a and b are assumed to take values 0.0, 1.0, 2.0, ...
-def safe_frac(a, b):
-    den = tf.maximum(a + b, tf.constant(1.0))
-    num = tf.maximum(a, den - (a + b))
-    return num / den
-
-
-def f1_score(actual_positive, pred_positive):
-    tp = tf.reduce_sum(tf.cast(tf.logical_and(actual_positive, pred_positive), tf.float32))
-    fp = tf.reduce_sum(tf.cast(tf.logical_and(tf.logical_not(actual_positive), pred_positive), tf.float32))
-    fn = tf.reduce_sum(tf.cast(tf.logical_and(actual_positive, tf.logical_not(pred_positive)), tf.float32))
-
-    p = safe_frac(tp, fp)
-    r = safe_frac(tp, fn)
-    return harmonic_mean([p, r])
-
-
-def loc(y_true, y_pred):
-    true_classes = tf.argmax(y_true, axis=-1)
-    pred_classes = tf.argmax(y_pred, axis=-1)
-
-    actual_building = true_classes > 0
-    pred_building = pred_classes > 0
-    return f1_score(actual_building, pred_building)
-
-
-def damage(y_true, y_pred):
-    true_classes = tf.argmax(y_true, axis=-1)
-    pred_classes = tf.argmax(y_pred, axis=-1)
-
-    f1_scores = []
-    for i in range(1, y_pred.shape[-1]):
-        actual_positive = true_classes == i
-        pred_positive = pred_classes == i
-        f1_scores.append(f1_score(actual_positive, pred_positive))
-    return harmonic_mean(f1_scores)
-
-
-def xview2(y_true, y_pred):
-    return 0.3 * loc(y_true, y_pred) + 0.7 * damage(y_true, y_pred)
-
-
 class WeightedCrossEntropy:
     # class_weights should be a Numpy array
     def __init__(self, class_weights):
@@ -71,7 +27,7 @@ class WeightedCrossEntropy:
 
     def __call__(self, y_true, y_pred, sample_weight=None):
         y_true = tf.stop_gradient(y_true)
-        pixel_losses = tf.nn.softmax_cross_entropy_with_logits(y_true, y_pred)
+        pixel_losses = tf.keras.losses.categorical_crossentropy(y_true, y_pred)
         pixel_weights = tf.reduce_mean(self.class_weights * y_true, axis=-1)
         mean_loss = tf.reduce_mean(pixel_weights * pixel_losses)
         return mean_loss
@@ -110,3 +66,35 @@ class SaveOutput(Callback):
             pred = 50 * tf.cast(pred, tf.uint8)
             pred = tf.expand_dims(pred, axis=-1)
             write_png(pred, os.path.join(self.output_dir, "{}_{}_pred.png".format(epoch, i)))
+
+
+class PrintXViewMetrics(Callback):
+    def __init__(self, n_classes=5):
+        self.n_classes = n_classes
+
+    def on_epoch_end(self, epoch, logs):
+        f1 = []
+        val_f1 = []
+        for i in range(self.n_classes):
+            p = logs.get("p_{}".format(i))
+            r = logs.get("r_{}".format(i))
+            val_p = logs.get("val_p_{}".format(i))
+            val_r = logs.get("val_p_{}".format(i))
+
+            f1.append(harmonic_mean([p, r]))
+            if val_p is not None and val_r is not None:
+                val_f1.append(harmonic_mean([val_p, val_r]))
+
+        loc = f1[0]
+        damage = harmonic_mean(f1[1:])
+        print()
+        print("loc:    {:.4f}".format(loc))
+        print("damage: {:.4f}".format(damage))
+        print("xview2: {:.4f}".format(0.3 * loc + 0.7 * damage))
+
+        if len(val_f1) > 0:
+            val_loc = val_f1[0]
+            val_damage = harmonic_mean(val_f1[1:])
+            print("val_loc:    {:.4f}".format(val_loc))
+            print("val_damage: {:.4f}".format(val_damage))
+            print("val_xview2: {:.4f}".format(0.3 * val_loc + 0.7 * val_damage))

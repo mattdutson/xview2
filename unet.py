@@ -1,6 +1,5 @@
 import tensorflow as tf
 from tensorflow.keras.layers import *
-from tensorflow.keras.models import Model
 
 
 def conv_block(x, n_filters):
@@ -64,5 +63,6 @@ def create_model(n_classes=5, size=(1024, 1024)):
     x = conv_block(x, 64)
 
     x = Conv2D(n_classes, (1, 1))(x)
+    x = Softmax()(x)
 
-    return Model(inputs=inputs, outputs=x)
+    return tf.keras.models.Model(inputs=inputs, outputs=x)

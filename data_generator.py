@@ -3,12 +3,11 @@ import random
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.utils import Sequence
 
 from util import read_png
 
 
-class DataGenerator(Sequence):
+class DataGenerator(tf.keras.utils.Sequence):
     def __init__(self, directory, size=(1024, 1024), crop_size=None, n_classes=5, shuffle=True, seed=0):
         self.size = size
         self.crop_size = crop_size

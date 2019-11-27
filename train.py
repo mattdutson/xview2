@@ -2,9 +2,11 @@
 
 import argparse
 
+import numpy as np
 from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.metrics import *
 from tensorflow.keras.optimizers import *
-from tensorflow.keras.optimizers.schedules import PiecewiseConstantDecay
+from tensorflow.keras.optimizers.schedules import *
 
 from data_generator import DataGenerator
 from unet import create_model
@@ -13,8 +15,8 @@ from util import *
 
 def train(args):
     size = (args.x_size, args.y_size)
-    if args.crop_x_size is not None and args.crop_y_size is not None:
-        crop_size = (args.crop_x_size, args.crop_y_size)
+    if args.crop_x is not None and args.crop_y is not None:
+        crop_size = (args.crop_x, args.crop_y)
     else:
         crop_size = None
     train_gen = DataGenerator(args.train_dir, size=size, crop_size=crop_size, shuffle=True, seed=1)
@@ -29,11 +31,14 @@ def train(args):
 
     schedule = PiecewiseConstantDecay([2 * len(train_gen)], [0.00001, 0.000001])
     optimizer = RMSprop(learning_rate=schedule)
-    loss = WeightedCrossEntropy(train_gen.class_weights())
-    metrics = ["acc", loc, damage, xview2]
+    loss = WeightedCrossEntropy(np.array([0.03, 1.0, 1.0, 1.0, 1.0]))
+    metrics = ["acc"]
+    for i in range(5):
+        metrics.append(Precision(class_id=i, name="p_{}".format(i)))
+        metrics.append(Recall(class_id=i, name="r_{}".format(i)))
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-    callbacks = []
+    callbacks = [PrintXViewMetrics()]
     if args.checkpoint_dir is not None:
         path = os.path.join(args.checkpoint_dir, "checkpoint_{epoch}.h5")
         callbacks.append(ModelCheckpoint(path, save_weights_only=True))
@@ -58,34 +63,34 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--best", default=None, type=str,
+        "-b", "--best", default=None, type=str,
         help="path for storing the model with the lowest validation loss")
     parser.add_argument(
-        "--checkpoint_dir", default=None, type=str,
+        "-c", "--checkpoint_dir", default=None, type=str,
         help="folder for saving model checkpoints after each epoch")
     parser.add_argument(
-        "--crop_x_size", default=None, type=int,
+        "--crop_x", default=None, type=int,
         help="width of random crops")
     parser.add_argument(
-        "--crop_y_size", default=None, type=int,
+        "--crop_y", default=None, type=int,
         help="height of random crops")
     parser.add_argument(
-        "--epochs", default=50, type=int,
+        "-e", "--epochs", default=50, type=int,
         help="number of training epochs")
     parser.add_argument(
-        "--load", default=None, type=str,
+        "-l", "--load", default=None, type=str,
         help="path for loading an existing model")
     parser.add_argument(
-        "--output_dir", default=None, type=str,
+        "-o", "--output_dir", default=None, type=str,
         help="path for saving sample outputs")
     parser.add_argument(
-        "--save", default=None, type=str,
+        "-s", "--save", default=None, type=str,
         help="path for saving the final model")
     parser.add_argument(
-        "--train_dir", default=os.path.join("dataset", "train"), type=str,
+        "-t", "--train_dir", default=os.path.join("dataset", "train"), type=str,
         help="folder containing training data")
     parser.add_argument(
-        "--val_dir", default=os.path.join("dataset", "val"), type=str,
+        "-v", "--val_dir", default=os.path.join("dataset", "val"), type=str,
         help="folder containing validation data")
     parser.add_argument(
         "--x_size", default=1024, type=int,
