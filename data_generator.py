@@ -13,6 +13,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         self.crop_size = crop_size
         self.n_classes = n_classes
         self.image_dir = os.path.join(directory, "images")
+        
         self.mask_dir = os.path.join(directory, "masks")
 
         self.dataset = []
@@ -57,6 +58,36 @@ class DataGenerator(tf.keras.utils.Sequence):
             return pre_post[:, x:x + w, y:y + h, :], mask[:, x:x + w, y:y + h, :]
         else:
             return pre_post, mask
+
+class TestDataGenerator(tf.keras.utils.Sequence):
+    def __init__(self, directory, size=(1024, 1024)):
+        self.size = size
+        self.image_dir = os.path.join(directory, "images")
+
+        self.dataset = []
+        image_list = os.listdir(self.image_dir)
+
+        for filename in image_list:
+            if "pre" in filename:
+                post_filename = filename.replace("pre", "post")
+                self.dataset.append((filename, post_filename, post_filename))
+                if post_filename not in image_list:
+                    raise AssertionError(post_filename + " not found in " + self.image_dir)
+                         
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        item = self.dataset[index % len(self.dataset)]
+
+        pre = read_png(os.path.join(self.image_dir, item[0]))
+        post = read_png(os.path.join(self.image_dir, item[1]))
+        pre_post = tf.concat([pre, post], axis=-1)
+        pre_post = tf.cast(pre_post, tf.float32) / 255.0
+        pre_post = tf.image.resize(pre_post, self.size)
+        pre_post = tf.expand_dims(pre_post, axis=0)
+
+        return pre_post
 
     def class_weights(self, beta=None):
         frequencies = np.zeros(self.n_classes, dtype=np.float32)
