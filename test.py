@@ -22,7 +22,7 @@ def test():
 
         # encode to png and write to file
         pred = tf.argmax(pred, axis=-1)
-        pred = 50 * tf.cast(pred, tf.uint8)
+        pred = tf.cast(pred, tf.uint8)
         pred = tf.expand_dims(pred, axis=-1)
         write_png(pred, os.path.join(output_dir, "test_damage_{:05d}_prediction.png".format(i)))
         write_png(pred, os.path.join(output_dir, "test_localization_{:05d}_prediction.png".format(i)))
