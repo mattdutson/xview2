@@ -5,6 +5,7 @@ from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.layers import *
 from tensorflow.keras.callbacks import TensorBoard
 
+
 def read_png(filename):
     return tf.image.decode_png(tf.io.read_file(filename))
 
@@ -99,11 +100,11 @@ class PrintXViewMetrics(Callback):
             print("val_damage: {:.4f}".format(val_damage))
             print("val_xview2: {:.4f}".format(0.3 * val_loc + 0.7 * val_damage))
 
+
 class TrainValTensorBoard(TensorBoard):
     def __init__(self, log_dir='./logs', **kwargs):
         train_dir = os.path.join(log_dir, 'training')
         super(TrainValTensorBoard, self).__init__(train_dir, **kwargs)
-
         self.val_dir = os.path.join(log_dir, 'validation')
 
     def set_model(self, model):
