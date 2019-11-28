@@ -1,48 +1,48 @@
 import argparse
 import os
+import tensorflow as tf
 
-from tensorflow.keras.models import model_from_json
-from data_generator import load_image
+from unet import create_model
+from data_generator import TestDataGenerator
+from util import write_png
 
-
-def load_model_arch(model_file_name):
-    with open(model_file_name, 'r') as json_file:
-        loaded_model_json = json_file.read()
-        json_file.close()
-        return model_from_json(loaded_model_json)
-
-def load_model_weights(weight_file_name, model):
-    model.load_weights(weight_file)
-    return model
-
-def test(model, test_dir):
-    images_dir = os.path.join(test_dir, "images")
-    
+def test():
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+    
+    # num of test cases
+    num_test_imgs = 932
 
-    # go through the test set
-    for filename in os.listdir(images_dir):
-        image = load_image(os.path.join(images_dir, filename))
-        ypred = model.predict(image)
-        ## TODO: encode to png, and write to file here
+    # generate the test dataset
+    test_dataset = TestDataGenerator(directory=test_dir)
+    
+    for i in range(num_test_imgs + 1):
+        # get prediction
+        pred = model.predict(test_dataset[i])[0, :, :, :]
 
+        # encode to png and write to file
+        pred = tf.argmax(pred, axis=-1)
+        pred = 50 * tf.cast(pred, tf.uint8)
+        pred = tf.expand_dims(pred, axis=-1)
+        write_png(pred, os.path.join(output_dir, "test_damage_{}_target.png".format(i)))
+        write_png(pred, os.path.join(output_dir, "test_localization_{}_target.png".format(i)))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_file', type=str, default='model.json')
-    parser.add_argument('--weight_file', type=str, default='weights.h5')
+    parser.add_argument('--model', type=str, default='model.json')
+    parser.add_argument('--output', type=str, default='predictions')
     args = parser.parse_args()
     
+    # test and output directories
     test_dir = os.path.join("dataset", "test")
-    output_dir = os.path.join("dataset", "output")
+    output_dir = args.output
 
     # load the model structure
-    model = load_model_arch(args.model_file)
+    model = create_model()
 
     # load model weights
-    model = load_model_weights(args.weight_file)
+    model.load_weights(args.model)
 
-
+    test()
     
 
