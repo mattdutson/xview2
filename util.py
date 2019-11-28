@@ -79,7 +79,7 @@ class PrintXViewMetrics(Callback):
             p = logs.get("p_{}".format(i))
             r = logs.get("r_{}".format(i))
             val_p = logs.get("val_p_{}".format(i))
-            val_r = logs.get("val_p_{}".format(i))
+            val_r = logs.get("val_r_{}".format(i))
 
             f1.append(harmonic_mean([p, r]))
             if val_p is not None and val_r is not None:
