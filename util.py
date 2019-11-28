@@ -3,7 +3,7 @@ import os
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.layers import *
-
+from tensorflow.keras.callbacks import TensorBoard
 
 def read_png(filename):
     return tf.image.decode_png(tf.io.read_file(filename))
@@ -98,3 +98,32 @@ class PrintXViewMetrics(Callback):
             print("val_loc:    {:.4f}".format(val_loc))
             print("val_damage: {:.4f}".format(val_damage))
             print("val_xview2: {:.4f}".format(0.3 * val_loc + 0.7 * val_damage))
+
+class TrainValTensorBoard(TensorBoard):
+    def __init__(self, log_dir='./logs', **kwargs):
+        train_dir = os.path.join(log_dir, 'training')
+        super(TrainValTensorBoard, self).__init__(train_dir, **kwargs)
+
+        self.val_dir = os.path.join(log_dir, 'validation')
+
+    def set_model(self, model):
+        self.val_writer = tf.summary.create_file_writer(self.val_dir)
+        super(TrainValTensorBoard, self).set_model(model)
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        validation_logs = {k.replace('val_', ''): v for k, v in logs.items() if k.startswith('val_')}
+        for name, value in validation_logs.items():
+            summary = tf.Summary()
+            summary_value = summary.value.add()
+            summary_value.simple_value = value.item()
+            summary_value.tag = name
+            self.val_writer.add_summary(summary, epoch)
+        self.val_writer.flush()
+
+        logs = {k: v for k, v in logs.items() if not k.startswith('val_')}
+        super(TrainValTensorBoard, self).on_epoch_end(epoch, logs)
+
+    def on_train_end(self, logs=None):
+        super(TrainValTensorBoard, self).on_train_end(logs)
+        self.val_writer.close()

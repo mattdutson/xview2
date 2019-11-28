@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
 import argparse
+from datetime import datetime
 
 import numpy as np
 from tensorflow.keras.callbacks import ModelCheckpoint
@@ -11,7 +10,6 @@ from tensorflow.keras.optimizers.schedules import *
 from data_generator import DataGenerator
 from unet import create_model
 from util import *
-
 
 def train(args):
     size = (args.x_size, args.y_size)
@@ -36,9 +34,10 @@ def train(args):
     for i in range(5):
         metrics.append(Precision(class_id=i, name="p_{}".format(i)))
         metrics.append(Recall(class_id=i, name="r_{}".format(i)))
-    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics) 
 
-    callbacks = [PrintXViewMetrics()]
+    log_dir="logs/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+    callbacks = [PrintXViewMetrics(), TensorBoard(log_dir = log_dir)]
     if args.checkpoint_dir is not None:
         path = os.path.join(args.checkpoint_dir, "checkpoint_{epoch}.h5")
         callbacks.append(ModelCheckpoint(path, save_weights_only=True))
@@ -57,7 +56,6 @@ def train(args):
 
     if args.save is not None:
         model.save_weights(args.save)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -103,3 +101,4 @@ if __name__ == "__main__":
         help="height of the model input")
 
     train(parser.parse_args())
+
