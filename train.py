@@ -19,8 +19,8 @@ def train(args):
         crop_size = (args.crop_x, args.crop_y)
     else:
         crop_size = None
-    train_gen = DataGenerator(args.train_dir, size=size, crop_size=crop_size, shuffle=True, seed=1)
-    val_gen = DataGenerator(args.val_dir, size=size, crop_size=crop_size, shuffle=False)
+    train_gen = DataGenerator(args.train_dir, size=size, shuffle=True, seed=1, crop_size=crop_size, augment=True)
+    val_gen = DataGenerator(args.val_dir, size=size, shuffle=False, crop_size=crop_size, augment=False)
 
     if crop_size is not None:
         model = create_model(size=crop_size)
@@ -62,6 +62,9 @@ def train(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
+    parser.add_argument(
+        "-a", "--augment", default=False, action="store_true",
+        help="whether to apply data augmentation to training data")
     parser.add_argument(
         "-b", "--best", default=None, type=str,
         help="path for storing the model with the lowest validation loss")
