@@ -35,12 +35,23 @@ class DataGenerator(tf.keras.utils.Sequence):
     def __len__(self):
         return len(self.dataset)
 
+    def augment(self, image_tensor, max_delta=0.2, lower=0.1, upper=0.3):
+        image_tensor = tf.image.random_flip_left_right(image_tensor)
+        image_tensor = tf.image.random_flip_up_down(image_tensor)
+        image_tensor = tf.image.random_brightness(image_tensor, max_delta)
+        image_tensor = tf.image.random_contrast(image_tensor, lower, upper)
+        image_tensor = tf.image.random_saturation(image_tensor, lower, upper)
+        image_tensor = tf.image.random_hue(image_tensor, max_delta)
+        return image_tensor
+
     def __getitem__(self, index):
         item = self.dataset[index % len(self.dataset)]
 
         pre = read_png(os.path.join(self.image_dir, item[0]))
         post = read_png(os.path.join(self.image_dir, item[1]))
-        pre_post = tf.concat([pre, post], axis=-1)
+        augmented_pre = self.augment(pre)
+        augmented_post = self.augment(post)
+        pre_post = tf.concat([augmented_pre, augmented_post], axis=-1)
         pre_post = tf.cast(pre_post, tf.float32) / 255.0
         pre_post = tf.image.resize(pre_post, self.size)
         pre_post = tf.expand_dims(pre_post, axis=0)
