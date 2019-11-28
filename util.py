@@ -85,7 +85,7 @@ class PrintXViewMetrics(Callback):
             if val_p is not None and val_r is not None:
                 val_f1.append(harmonic_mean([val_p, val_r]))
 
-        loc = f1[0]
+        loc = f1[1]
         damage = harmonic_mean(f1[1:])
         print()
         print("loc:    {:.4f}".format(loc))
@@ -93,7 +93,7 @@ class PrintXViewMetrics(Callback):
         print("xview2: {:.4f}".format(0.3 * loc + 0.7 * damage))
 
         if len(val_f1) > 0:
-            val_loc = val_f1[0]
+            val_loc = val_f1[1]
             val_damage = harmonic_mean(val_f1[1:])
             print("val_loc:    {:.4f}".format(val_loc))
             print("val_damage: {:.4f}".format(val_damage))
