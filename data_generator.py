@@ -59,22 +59,6 @@ class DataGenerator(tf.keras.utils.Sequence):
         else:
             return pre_post, mask
 
-    def class_weights(self, beta=None):
-        frequencies = np.zeros(self.n_classes, dtype=np.float32)
-        for item in self.dataset:
-            mask = read_png(os.path.join(self.mask_dir, item[2]))
-            for i in range(self.n_classes):
-                frequencies[i] += np.count_nonzero(mask == i)
-
-        if beta is None:
-            weights = frequencies ** -1
-        else:
-            frequencies /= len(self)
-            weights = (1.0 - beta) / (1.0 - beta ** frequencies)
-        weights /= np.mean(weights)
-        return weights
-
-
 class TestDataGenerator(tf.keras.utils.Sequence):
     def __init__(self, directory, size=(1024, 1024)):
         self.size = size
@@ -104,3 +88,18 @@ class TestDataGenerator(tf.keras.utils.Sequence):
         pre_post = tf.expand_dims(pre_post, axis=0)
 
         return pre_post 
+
+def class_weights(self, beta=None):
+    frequencies = np.zeros(self.n_classes, dtype=np.float32)
+    for item in self.dataset:
+        mask = read_png(os.path.join(self.mask_dir, item[2]))
+        for i in range(self.n_classes):
+            frequencies[i] += np.count_nonzero(mask == i)
+
+    if beta is None:
+        weights = frequencies ** -1
+    else:
+        frequencies /= len(self)
+        weights = (1.0 - beta) / (1.0 - beta ** frequencies)
+    weights /= np.mean(weights)
+    return weights
