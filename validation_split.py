@@ -75,16 +75,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--fraction", default=0.1, type=float,
+        "-f", "--fraction", default=0.1, type=float,
         help="fraction of training items to hold out for validation")
     parser.add_argument(
-        "--seed", default=0, type=int,
+        "-s", "--seed", default=0, type=int,
         help="random seed")
     parser.add_argument(
-        "--train_dir", default=os.path.join("dataset", "train"), type=str,
+        "-t", "--train_dir", default=os.path.join("dataset", "train"), type=str,
         help="folder containing training data")
     parser.add_argument(
-        "--val_dir", default=os.path.join("dataset", "val"), type=str,
+        "-v", "--val_dir", default=os.path.join("dataset", "val"), type=str,
         help="folder for validation data")
 
     validation_split(parser.parse_args())

@@ -115,20 +115,20 @@ class DataGenerator(tf.keras.utils.Sequence):
             weights = (1.0 - beta) / (1.0 - beta ** frequencies)
         weights /= np.mean(weights)
         return weights
-                    
+
 
 class TestDataGenerator(tf.keras.utils.Sequence):
     def __init__(self, directory, size=(1024, 1024)):
         self.size = size
-        self.image_dir = os.path.join(directory, "images")
 
+        self.image_dir = os.path.join(directory, "images")
         self.dataset = []
         image_list = os.listdir(self.image_dir)
-
         for filename in image_list:
             if "pre" in filename:
                 post_filename = filename.replace("pre", "post")
-                self.dataset.append((filename, post_filename, post_filename))
+                index = int(filename.replace("test_pre_", "").replace(".png", ""))
+                self.dataset.append((filename, post_filename, index))
                 if post_filename not in image_list:
                     raise AssertionError(post_filename + " not found in " + self.image_dir)
 
@@ -140,9 +140,10 @@ class TestDataGenerator(tf.keras.utils.Sequence):
 
         pre = read_png(os.path.join(self.image_dir, item[0]))
         post = read_png(os.path.join(self.image_dir, item[1]))
+
         pre_post = tf.concat([pre, post], axis=-1)
         pre_post = tf.cast(pre_post, tf.float32) / 255.0
         pre_post = tf.image.resize(pre_post, self.size)
         pre_post = tf.expand_dims(pre_post, axis=0)
 
-        return pre_post
+        return pre_post, item[2]

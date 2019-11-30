@@ -61,7 +61,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--train_dir", default=os.path.join("dataset", "train"), type=str,
+        "-t", "--train_dir", default=os.path.join("dataset", "train"), type=str,
         help="folder containing training data")
 
     rasterize_labels(parser.parse_args())
