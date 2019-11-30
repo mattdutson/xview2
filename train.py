@@ -20,7 +20,7 @@ def train(args):
         crop_size = (args.crop_x, args.crop_y)
     else:
         crop_size = None
-    train_gen = DataGenerator(args.train_dir, size=size, shuffle=True, seed=1, crop_size=crop_size, augment=True)
+    train_gen = DataGenerator(args.train_dir, size=size, shuffle=True, seed=1, crop_size=crop_size, augment=args.augment)
     val_gen = DataGenerator(args.val_dir, size=size, shuffle=False, crop_size=crop_size, augment=False)
 
     if crop_size is not None:

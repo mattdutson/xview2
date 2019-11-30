@@ -17,10 +17,10 @@ class DataGenerator(tf.keras.utils.Sequence):
             seed=0,
             crop_size=None,
             augment=False,
-            brightness_range=0.2,
+            brightness_range=0.05,
             contrast_range=0.2,
-            saturation_range=0.2,
-            hue_range=0.2):
+            saturation_range=0.4,
+            hue_range=0.05):
         self.size = size
         self.n_classes = n_classes
         self.crop_size = crop_size
