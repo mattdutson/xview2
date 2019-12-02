@@ -29,7 +29,7 @@ def overlay_mask(base, mask):
         for j in range(output.shape[1]):
             mask_val = mask_np[i, j]
             if mask_val != 0:
-                output[j, i] = mask_colors[mask_val]
+                output[i, j] = mask_colors[mask_val]
     return output
 
 
