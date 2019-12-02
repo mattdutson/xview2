@@ -1,9 +1,17 @@
 import os
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
-from tensorflow.keras.layers import *
 from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.layers import *
+
+mask_colors = {
+    1: [0, 255, 0],
+    2: [255, 255, 0],
+    3: [255, 127, 0],
+    4: [255, 0, 0]
+}
 
 
 def read_png(filename):
@@ -12,6 +20,17 @@ def read_png(filename):
 
 def write_png(array, filename):
     tf.io.write_file(filename, tf.image.encode_png(array))
+
+
+def overlay_mask(base, mask):
+    mask_np = mask.numpy()
+    output = np.copy(base)
+    for i in range(output.shape[0]):
+        for j in range(output.shape[1]):
+            mask_val = mask_np[i, j]
+            if mask_val != 0:
+                output[j, i] = mask_colors[mask_val]
+    return output
 
 
 def harmonic_mean(items):
@@ -58,14 +77,14 @@ class SaveOutput(Callback):
 
             true = item[1][0]
             true = tf.argmax(true, axis=-1)
-            true = 50 * tf.cast(true, tf.uint8)
-            true = tf.expand_dims(true, axis=-1)
+            true = overlay_mask(post, true)
+            true = tf.cast(true, tf.uint8)
             write_png(true, os.path.join(self.output_dir, "{}_{}_true.png".format(epoch, i)))
 
             pred = self.model.predict(pre_post)[0, :, :, :]
             pred = tf.argmax(pred, axis=-1)
-            pred = 50 * tf.cast(pred, tf.uint8)
-            pred = tf.expand_dims(pred, axis=-1)
+            pred = overlay_mask(post, pred)
+            pred = tf.cast(pred, tf.uint8)
             write_png(pred, os.path.join(self.output_dir, "{}_{}_pred.png".format(epoch, i)))
 
 
