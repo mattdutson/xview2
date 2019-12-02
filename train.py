@@ -47,7 +47,7 @@ def train(args):
     if args.best is not None:
         callbacks.append(ModelCheckpoint(args.best, monitor="val_loss", save_best_only=True, save_weights_only=True))
     if args.output_dir is not None:
-        callbacks.append(SaveOutput(train_gen, args.output_dir, n_items=50))
+        callbacks.append(SaveOutput(val_gen, args.output_dir, n_items=50))
 
     model.fit_generator(
         generator=train_gen,
