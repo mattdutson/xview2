@@ -92,7 +92,7 @@ class PrintXViewMetrics(Callback):
     def __init__(self, n_classes=5):
         self.n_classes = n_classes
 
-    def on_epoch_end(self, epoch, logs):
+    def on_epoch_end(self, _, logs):
         f1 = []
         val_f1 = []
         for i in range(self.n_classes):
@@ -106,18 +106,20 @@ class PrintXViewMetrics(Callback):
                 val_f1.append(harmonic_mean([val_p, val_r]))
 
         loc = f1[1]
-        damage = harmonic_mean(f1[1:])
         print()
-        print("loc:    {:.4f}".format(loc))
-        print("damage: {:.4f}".format(damage))
-        print("xview2: {:.4f}".format(0.3 * loc + 0.7 * damage))
+        print("loc: {:.4f}".format(loc))
+        if self.n_classes > 2:
+            damage = harmonic_mean(f1[1:])
+            print("damage: {:.4f}".format(damage))
+            print("xview2: {:.4f}".format(0.3 * loc + 0.7 * damage))
 
         if len(val_f1) > 0:
             val_loc = val_f1[1]
-            val_damage = harmonic_mean(val_f1[1:])
-            print("val_loc:    {:.4f}".format(val_loc))
-            print("val_damage: {:.4f}".format(val_damage))
-            print("val_xview2: {:.4f}".format(0.3 * val_loc + 0.7 * val_damage))
+            print("val_loc: {:.4f}".format(val_loc))
+            if self.n_classes > 2:
+                val_damage = harmonic_mean(val_f1[1:])
+                print("val_damage: {:.4f}".format(val_damage))
+                print("val_xview2: {:.4f}".format(0.3 * val_loc + 0.7 * val_damage))
 
 
 class TrainValTensorBoard(TensorBoard):

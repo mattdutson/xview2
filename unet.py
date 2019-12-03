@@ -9,7 +9,7 @@ def conv_block(x, n_filters):
     return x
 
 
-def create_model(n_classes=5, size=(1024, 1024)):
+def create_model(size=(1024, 1024), n_classes=5):
     inputs = Input(shape=(size[0], size[1], 6))
     x = inputs
 

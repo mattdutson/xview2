@@ -20,34 +20,50 @@ def train(args):
         crop_size = (args.crop_x, args.crop_y)
     else:
         crop_size = None
-    train_gen = DataGenerator(args.train_dir, size=size, shuffle=True, seed=1, crop_size=crop_size, augment=args.augment)
-    val_gen = DataGenerator(args.val_dir, size=size, shuffle=False, crop_size=crop_size, augment=False)
+    train_gen = DataGenerator(
+        args.train_dir,
+        size=size,
+        n_classes=args.n_classes,
+        shuffle=True,
+        seed=1,
+        crop_size=crop_size,
+        augment=args.augment)
+    val_gen = DataGenerator(
+        args.val_dir,
+        size=size,
+        n_classes=args.n_classes,
+        shuffle=False,
+        crop_size=crop_size,
+        augment=False)
 
     if crop_size is not None:
-        model = create_model(size=crop_size)
+        model = create_model(size=crop_size, n_classes=args.n_classes)
     else:
-        model = create_model(size=size)
+        model = create_model(size=size, n_classes=args.n_classes)
     if args.load is not None:
         model.load_weights(args.load)
 
     schedule = PiecewiseConstantDecay([2 * len(train_gen)], [0.00001, 0.000001])
     optimizer = RMSprop(learning_rate=schedule)
+
+    # IMPORTANT: make sure the length of this array matches the number of classes
     loss = WeightedCrossEntropy(np.array([0.03, 1.0, 1.0, 1.0, 1.0]))
+
     metrics = ["acc"]
-    for i in range(5):
+    for i in range(args.n_classes):
         metrics.append(Precision(class_id=i, name="p_{}".format(i)))
         metrics.append(Recall(class_id=i, name="r_{}".format(i)))
     model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     log_dir = "logs/" + datetime.now().strftime("%Y%m%d-%H%M%S")
-    callbacks = [PrintXViewMetrics(), TensorBoard(log_dir=log_dir)]
+    callbacks = [PrintXViewMetrics(n_classes=args.n_classes), TensorBoard(log_dir=log_dir)]
     if args.checkpoint_dir is not None:
         path = os.path.join(args.checkpoint_dir, "checkpoint_{epoch}.h5")
         callbacks.append(ModelCheckpoint(path, save_weights_only=True))
     if args.best is not None:
         callbacks.append(ModelCheckpoint(args.best, monitor="val_loss", save_best_only=True, save_weights_only=True))
     if args.output_dir is not None:
-        callbacks.append(SaveOutput(val_gen, args.output_dir, n_items=50))
+        callbacks.append(SaveOutput(val_gen, args.output_dir))
 
     model.fit_generator(
         generator=train_gen,
@@ -88,6 +104,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-o", "--output_dir", default=None, type=str,
         help="path for saving sample outputs")
+    parser.add_argument(
+        "-n", "--n_classes", default=5, type=int,
+        help="the number of classes to assume")
     parser.add_argument(
         "-s", "--save", default=None, type=str,
         help="path for saving the final model")

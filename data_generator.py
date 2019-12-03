@@ -90,6 +90,8 @@ class DataGenerator(tf.keras.utils.Sequence):
 
         mask = tf.image.resize(mask, self.size, method="nearest")
         mask = tf.expand_dims(mask, axis=0)
+        mask = tf.cast(mask, tf.int32)
+        mask = tf.minimum(mask, tf.constant(self.n_classes - 1, dtype=tf.int32))
         mask = tf.keras.utils.to_categorical(mask, num_classes=self.n_classes)
 
         if self.crop_size is not None:
