@@ -1,3 +1,4 @@
+# Directories to exclude
 .ipynb_checkpoints
 .idea
 .vscode
@@ -5,5 +6,7 @@ dataset/test
 dataset/train
 dataset/val
 dataset/*.tar.gz
+
+# Files to exclude
 .DS_Store
 *.pyc
