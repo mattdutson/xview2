@@ -3,7 +3,6 @@
 import argparse
 from datetime import datetime
 
-import numpy as np
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.metrics import *
 from tensorflow.keras.optimizers import *
@@ -43,11 +42,11 @@ def train(args):
     if args.load is not None:
         model.load_weights(args.load)
 
-    schedule = PiecewiseConstantDecay([2 * len(train_gen)], [0.00001, 0.000001])
+    schedule = PiecewiseConstantDecay([2 * len(train_gen)], [1e-5, 1e-6])
     optimizer = RMSprop(learning_rate=schedule)
 
     # IMPORTANT: make sure the length of this array matches the number of classes
-    loss = WeightedCrossEntropy(np.array([0.03, 1.0, 1.0, 1.0, 1.0]))
+    loss = WeightedCrossEntropy(np.array([0.05, 1.0, 3.0, 3.0, 1.0]))
 
     metrics = ["acc"]
     for i in range(args.n_classes):
