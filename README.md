@@ -16,7 +16,7 @@ A description of our methods and results can be found in [this report](https://m
 
 ## Citing
 
-Use the following BibTex to cite:
+Use the following BibTeX to cite this repository:
 ```bibtex
 @misc{mattdutson_xview2_2020,
   title = {mattdutson/xview2},
