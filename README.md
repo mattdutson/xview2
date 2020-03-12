@@ -13,3 +13,17 @@ conda create -f envs/xview2.yml
 ## Report
 
 A description of our methods and results can be found in [this report](https://mdutson.net/assets/xview2_report.pdf).
+
+## Citing
+
+Use the following BibTex to cite:
+```bibtex
+@misc{mattdutson_xview2_2020,
+  title = {mattdutson/xview2},
+  copyright = {MIT},
+  url = {https://github.com/mattdutson/xview2},
+  abstract = {A solution to the 2019 xView2 competition.},
+  author = {Demirel, Mehmet and Dutson, Matthew and Shridhar, Shri},
+  year = {2020},
+}
+```
