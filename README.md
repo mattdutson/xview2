@@ -12,7 +12,7 @@ conda create -f envs/xview2.yml
 
 ## Report
 
-A description of our methods and results can be found in [this report](https://mdutson.net/assets/xview2_report.pdf).
+A description of our methods and results can be found in the file `report.pdf`.
 
 ## Citing
 
